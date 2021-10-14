@@ -65,7 +65,7 @@ test.serial.cb('[GET] /api/targets', function (t) {
         t.end()
       })
     })
-    .catch((error) => {
+    .catch((err) => {
       t.fail(err.toString())
       t.end()
     })
@@ -212,5 +212,55 @@ test.serial.cb('[POST] /api/targets', function (t) {
       })
   })
   stream.write(JSON.stringify(referenceBody))
+  stream.end()
+})
+
+test.serial.cb('[POST][REJECT] /route', function (t) {
+  var url = '/route'
+  var optionsPost = {
+    method: 'POST',
+    encoding: 'json'
+  }
+  var request = {
+    geoState: 'ca',
+    publisher: 'abc',
+    timestamp: '2018-07-19T23:28:59.513Z'
+  }
+  var referenceBody = { decision: 'reject' }
+  var stream = servertest(server(), url, optionsPost, function (err, res) {
+    t.falsy(err, 'no error')
+    var { headers, statusCode, body } = res
+    t.is(headers['content-type'], 'application/json', '"Content-Type" must be "application/json"')
+    t.is(statusCode, 200)
+    t.is(typeof body === 'object', true, 'body should be an object')
+    t.deepEqual(body, referenceBody, 'body should be deeply equal to referenceBody')
+    t.end()
+  })
+  stream.write(JSON.stringify(request))
+  stream.end()
+})
+
+test.serial.cb('[POST][ACCEPT] /route', function (t) {
+  var url = '/route'
+  var optionsPost = {
+    method: 'POST',
+    encoding: 'json'
+  }
+  var request = {
+    geoState: 'ny',
+    publisher: 'abc',
+    timestamp: '2018-07-19T14:28:59.513Z'
+  }
+  var referenceBody = { decision: 'accept' }
+  var stream = servertest(server(), url, optionsPost, function (err, res) {
+    t.falsy(err, 'no error')
+    var { headers, statusCode, body } = res
+    t.is(headers['content-type'], 'application/json', '"Content-Type" must be "application/json"')
+    t.is(statusCode, 200)
+    t.is(typeof body === 'object', true, 'body should be an object')
+    t.deepEqual(body, referenceBody, 'body should be deeply equal to referenceBody')
+    t.end()
+  })
+  stream.write(JSON.stringify(request))
   stream.end()
 })
