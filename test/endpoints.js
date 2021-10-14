@@ -100,3 +100,63 @@ test.serial.cb('[POST] /api/target/2', function (t) {
   stream.write(JSON.stringify(postBody))
   stream.end()
 })
+
+test.serial.cb('[POST] /api/targets', function (t) {
+  var url = '/api/targets'
+  var optionsPost = {
+    method: 'POST',
+    encoding: 'json'
+  }
+  var referenceBody = [
+    {
+      id: '3',
+      url: 'http://example.com',
+      value: '0.50',
+      maxAcceptsPerDay: '10',
+      accept: {
+        geoState: {
+          $in: ['ca', 'ny']
+        },
+        hour: {
+          $in: ['13', '14', '15']
+        }
+      }
+    },
+    {
+      id: '4',
+      url: 'http://domain.com',
+      value: '1.50',
+      maxAcceptsPerDay: '20',
+      accept: {
+        geoState: {
+          $in: ['tx', 'mi']
+        },
+        hour: {
+          $in: ['10', '11', '12']
+        }
+      }
+    }
+  ]
+  var stream = servertest(server(), url, optionsPost, function (err, res) {
+    t.falsy(err, 'no error')
+    var { headers, statusCode, body } = res
+    t.is(headers['content-type'], 'application/json', '"Content-Type" must be "application/json"')
+    t.is(statusCode, 200)
+    t.is(typeof body === 'object', true, 'body should be an object')
+    t.deepEqual(body, referenceBody, 'body should be deeply equal to referenceBody')
+    Promise.all(referenceBody.map(async (target) => {
+      var json = await redis.loadTarget(target.id)
+      return JSON.parse(json)
+    }))
+      .then((targets) => {
+        t.deepEqual(targets, referenceBody, 'targets should be deeply equal to referenceBody')
+        t.end()
+      })
+      .catch((err) => {
+        t.fail(err.toString())
+        t.end()
+      })
+  })
+  stream.write(JSON.stringify(referenceBody))
+  stream.end()
+})
