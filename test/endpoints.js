@@ -17,6 +17,60 @@ test.serial.cb('healthcheck', function (t) {
   })
 })
 
+test.serial.cb('[GET] /api/targets', function (t) {
+  var url = '/api/targets'
+  var optionsGet = {
+    method: 'GET',
+    encoding: 'json'
+  }
+  var referenceBody = [
+    {
+      id: '5',
+      url: 'http://example.com',
+      value: '0.50',
+      maxAcceptsPerDay: '10',
+      accept: {
+        geoState: {
+          $in: ['ca', 'ny']
+        },
+        hour: {
+          $in: ['13', '14', '15']
+        }
+      }
+    },
+    {
+      id: '6',
+      url: 'http://domain.com',
+      value: '1.50',
+      maxAcceptsPerDay: '20',
+      accept: {
+        geoState: {
+          $in: ['tx', 'mi']
+        },
+        hour: {
+          $in: ['10', '11', '12']
+        }
+      }
+    }
+  ]
+  Promise.all(referenceBody.map(redis.saveTarget))
+    .then(() => {
+      servertest(server(), url, optionsGet, function (err, res) {
+        t.falsy(err, 'no error')
+        var { headers, statusCode, body } = res
+        t.is(headers['content-type'], 'application/json', '"Content-Type" must be "application/json"')
+        t.is(statusCode, 200)
+        t.is(typeof body === 'object', true, 'body should be an object')
+        t.deepEqual(body, referenceBody, 'body should be deeply equal to referenceBody')
+        t.end()
+      })
+    })
+    .catch((error) => {
+      t.fail(err.toString())
+      t.end()
+    })
+})
+
 test.serial.cb('[GET] /api/target/1', function (t) {
   var url = '/api/target/1'
   var optionsGet = {
